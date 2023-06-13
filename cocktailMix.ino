@@ -23,7 +23,7 @@ const uint8_t waitPin = 7;
 void setup() {
   Serial.begin(9600);
   for(int i = 0; i < sizeof(buttonPins); i++) {
-    pinMode(buttonPins[i], INPUT);
+    pinMode(buttonPins[i], INPUT_PULLUP);
   }
   
   for(int i = 0; i < sizeof(pumpPins); i++) {
@@ -64,5 +64,5 @@ void loop() {
       break;
     }
   }
-  delay(500);
+  delay(100);
 }
