@@ -8,10 +8,41 @@ const double pumpSpeed = 30;
 const char* ssid = "ESP-Accesspoint";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
 
+const uint8_t pumpPins[] = {D0, D1, D2, D3};
+
+
+struct Drink
+{
+  String Name;
+  // in ml
+  double cupSize;
+  double ratio[sizeof(pumpPins)];
+};
+
+const Drink drinks[] = {
+  {
+    "Pina Colada",
+    400,
+    {0.2, 0.5, 0.2, 0.0}
+  },
+  {
+    "Gruene Wiese",
+    400,
+    {0.0, 0.5, 0.0, 0.5}
+  },
+  {
+    "Shot",
+    40,
+    {1.0, 0.0, 0.0, 0.}
+  }
+  
+};
+
+
+
 const int bufferSize = 4;
 
 
-const uint8_t pumpPins[] = {D0, D1, D2, D3};
 
 const uint8_t waitPin = D8;
 
@@ -50,14 +81,10 @@ void putInRow(double recipe[], double cupSize) {
   }
 }
 
-void putIn(String recipe, double cupSize) {
+void putIn(Drink drink) {
   double rec[sizeof(pumpPins)];
-  for(int i = 0; i < sizeof(pumpPins); i++) { 
-    rec[i] = recipe.substring(i*bufferSize, (i+1)*bufferSize).toDouble();
-    Serial.println(rec[i]);
-  }
   digitalWrite(waitPin, HIGH);
-  putInRow(rec, cupSize);
+  putInRow(drink.ratio , drink.cupSize);
   delay(3000);
   digitalWrite(waitPin, LOW);
   
@@ -130,7 +157,6 @@ void loop() {
   ///////////////////////////////////////////////////////////////////////////////
   // output parameters to serial, you may connect e.g. an Arduino and react on it
   ///////////////////////////////////////////////////////////////////////////////
-  double sL = 0;
   if(sParam.length()>0)
   {
     int iEqu=sParam.indexOf("=");
@@ -139,7 +165,6 @@ void loop() {
       sCmd = sParam.substring(iEqu+1,sParam.length());
       Serial.println(sCmd);
       Serial.println(sParam.substring(1, iEqu));
-      sL = sParam.substring(1, iEqu).toDouble();
     }
   }
 
@@ -161,8 +186,7 @@ void loop() {
     sHeader += "\r\n";
   }
   else {
-    Serial.println(sL);
-    putIn(sCmd, sL);
+    putIn(drinks[sCmd.toInt()]);
     sResponse="Done";
     sHeader  = "HTTP/1.1 200 OK\r\n";
     sHeader += "Content-Length: ";
