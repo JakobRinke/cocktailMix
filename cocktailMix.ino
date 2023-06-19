@@ -1,4 +1,3 @@
-
 #include <ESP8266WiFi.h>
 
 
@@ -9,7 +8,7 @@ const char* ssid = "ESP-Accesspoint";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
 
 const uint8_t pumpPins[] = {D0, D1, D2, D3};
-
+const uint8_t waitPin = D8;
 
 struct Drink
 {
@@ -40,11 +39,78 @@ const Drink drinks[] = {
 
 
 
+String WebsitePrefab = R"=====(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        * {
+            padding: 0;
+            text-align: center;
+        }
+        body {
+            background-color: rgb(255, 249, 240);
+        }
+        h1 {
+            font-size: 250%;
+        }
+        button {
+            width: 90%;
+            font-size: 140%;
+            height: 6vh;
+            margin-bottom: 5vh;
+            background-color: rgb(255, 194, 150);
+            color: #3d3d3d;
+        }
+    </style>
+</head>
+<body>
+    <br><br>
+    <h1>
+        Getränk Auswählen
+    </h1>
+    <br><br>
+
+    <div class="drinkWrapper">
+        <ul class="drinks">
+           DRINKS
+        </ul>
+    </div>
+
+    <script> 
+        async function getDrink(id) {
+            const buttons = document.getElementsByName("button");
+            buttons.forEach(b=>{
+                b.style.pointerEvents = "none"
+            });
+            alert("Drink Wird bestellt, bitte warten");
+            resp = await fetch("./drink?drink="+id)
+            alert(await resp.text());
+            buttons.forEach(b=>{
+                b.style.pointerEvents = "auto"
+            });
+        }
+    </script>
+</body>
+</html>
+)=====";
+
+
+
+
+const String drinkPrefab = R"=====( 
+  <li class="drinkItem"> 
+      <button onclick="getDrink(ID)">
+          NAME
+      </button>
+   </li>
+)=====";
+
 const int bufferSize = 4;
 
-
-
-const uint8_t waitPin = D8;
 
 
 unsigned long ulReqcount;
@@ -53,7 +119,7 @@ WiFiServer server(80);
 void setup() {
    ulReqcount=0; 
   Serial.begin(9600);
-  for(int i = 0; i < sizeof(pumpPins); i++) {
+  for(int i = 0; i < sizeof(pumpPins) / sizeof(pumpPins[0]); i++) {
     pinMode(pumpPins[i], OUTPUT);
   }
   pinMode(waitPin, OUTPUT);
@@ -63,6 +129,18 @@ void setup() {
   WiFi.mode(WIFI_AP);
   WiFi.softAP(ssid, password);
   server.begin();
+  String drinkHTML = "";
+  for (int i = 0; i < sizeof(drinks) / sizeof(drinks[0]);  i++) {
+    drinkHTML += getDrinkHTML(i);
+  }
+  WebsitePrefab.replace("DRINKS", drinkHTML);
+}
+
+String getDrinkHTML(int id) {
+  String nStr = drinkPrefab.substring(0, drinkPrefab.length());
+  nStr.replace("NAME", drinks[id].Name);
+  nStr.replace("ID", String(id));
+  return nStr;
 }
 
 
@@ -72,7 +150,7 @@ int calcFIllTime(double t, double cupSize) {
 }
 
 void putInRow(double recipe[], double cupSize) {
-  for(int i = 0; i < sizeof(recipe); i++) {
+  for(int i = 0; i < sizeof(recipe) / sizeof(recipe[0]); i++) {
     if (recipe[i] > 0) {
          digitalWrite(pumpPins[i], HIGH);
          delay(calcFIllTime(recipe[i], cupSize));
@@ -82,7 +160,7 @@ void putInRow(double recipe[], double cupSize) {
 }
 
 void putIn(Drink drink) {
-  double rec[sizeof(pumpPins)];
+  double rec[sizeof(pumpPins)/sizeof(pumpPins[0])];
   digitalWrite(waitPin, HIGH);
   putInRow(drink.ratio , drink.cupSize);
   delay(3000);
@@ -175,8 +253,8 @@ void loop() {
   // format the html response
   ///////////////////////////
   String sResponse,sHeader;
-  if (sCmd.length() != sizeof(pumpPins)*bufferSize) {  
-    sResponse="Invalid Arg";
+  if (sPath=="/") {  
+    sResponse=WebsitePrefab;
     sHeader  = "HTTP/1.1 200 OK\r\n";
     sHeader += "Content-Length: ";
     sHeader += sResponse.length();
