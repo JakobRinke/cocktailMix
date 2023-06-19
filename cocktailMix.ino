@@ -21,18 +21,18 @@ struct Drink
 const Drink drinks[] = {
   {
     "Pina Colada",
-    400,
-    {0.2, 0.5, 0.2, 0.0}
+    400.0,
+    {0.2, 0.5, 0.3, 0.0}
   },
   {
     "Gruene Wiese",
-    400,
+    400.0,
     {0.0, 0.5, 0.0, 0.5}
   },
   {
     "Shot",
-    40,
-    {1.0, 0.0, 0.0, 0.}
+    40.0,
+    {1.0, 0.0, 0.0, 0.0}
   }
   
 };
@@ -119,7 +119,7 @@ WiFiServer server(80);
 void setup() {
    ulReqcount=0; 
   Serial.begin(9600);
-  for(int i = 0; i < sizeof(pumpPins) / sizeof(pumpPins[0]); i++) {
+  for(int i = 0; i < sizeof(pumpPins); i++) {
     pinMode(pumpPins[i], OUTPUT);
   }
   pinMode(waitPin, OUTPUT);
@@ -145,23 +145,23 @@ String getDrinkHTML(int id) {
 
 
 
-int calcFIllTime(double t, double cupSize) {
+int calcFillTime(double t, double cupSize) {
   return (int) (1000 * t * cupSize / pumpSpeed);
 }
 
 void putInRow(double recipe[], double cupSize) {
-  for(int i = 0; i < sizeof(recipe) / sizeof(recipe[0]); i++) {
+  for(int i = 0; i < sizeof(recipe); i++) {
     if (recipe[i] > 0) {
          digitalWrite(pumpPins[i], HIGH);
-         delay(calcFIllTime(recipe[i], cupSize));
+         delay(calcFillTime(recipe[i], cupSize));
          digitalWrite(pumpPins[i], LOW);
     }  
   }
 }
 
 void putIn(Drink drink) {
-  double rec[sizeof(pumpPins)/sizeof(pumpPins[0])];
   digitalWrite(waitPin, HIGH);
+  Serial.println(drink.Name);
   putInRow(drink.ratio , drink.cupSize);
   delay(3000);
   digitalWrite(waitPin, LOW);
