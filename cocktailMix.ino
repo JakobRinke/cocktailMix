@@ -7,8 +7,8 @@ const double pumpSpeed = 30;
 const char* ssid = "ESP-Accesspoint";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
 
-const uint8_t pumpPins[] = {D0, D1, D2, D3};
-const uint8_t waitPin = D8;
+const uint8_t pumpPins[] = {2, 3, 4, 5};
+const uint8_t waitPin = 10;
 
 struct Drink
 {
