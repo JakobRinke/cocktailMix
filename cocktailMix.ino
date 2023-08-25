@@ -1,40 +1,15 @@
 #include <ESP8266WiFi.h>
 
-
 // Pumpengeschwindigkeit in ml/s
-const double pumpSpeed = 30;
 
-const char* ssid = "ESP-Accesspoint";
-const char* password = "12345678";  // set to "" for open access point w/o passwortd
+const char* ssid = "Cocktailautomat";
+const char* password = ""; 
 
-const uint8_t pumpPins[] = {2, 3, 4, 5};
-const uint8_t waitPin = 10;
 
-struct Drink
-{
-  String Name;
-  // in ml
-  double cupSize;
-  double ratio[sizeof(pumpPins)];
-};
-
-const Drink drinks[] = {
-  {
+const String drinks[] = {
     "Pina Colada",
-    400.0,
-    {0.2, 0.5, 0.3, 0.0}
-  },
-  {
     "Gruene Wiese",
-    400.0,
-    {0.0, 0.5, 0.0, 0.5}
-  },
-  {
-    "Shot",
-    40.0,
-    {1.0, 0.0, 0.0, 0.0}
-  }
-  
+    "Shot"
 };
 
 
@@ -69,7 +44,7 @@ String WebsitePrefab = R"=====(
 </head>
 <body>
     <br><br>
-    <h1>
+    <h1 id="headline">
         Getränk Auswählen
     </h1>
     <br><br>
@@ -86,9 +61,10 @@ String WebsitePrefab = R"=====(
             buttons.forEach(b=>{
                 b.style.pointerEvents = "none"
             });
-            alert("Drink Wird bestellt, bitte warten");
+            headline.innerHTML = "Bitte Warten";
             resp = await fetch("./drink?drink="+id)
             alert(await resp.text());
+            headline.innerHTML = "Getränk Auswählen";
             buttons.forEach(b=>{
                 b.style.pointerEvents = "auto"
             });
@@ -115,16 +91,13 @@ const int bufferSize = 4;
 
 unsigned long ulReqcount;
 WiFiServer server(80);
-
 void setup() {
-   ulReqcount=0; 
+   mySerial.begin(9600);
+  ulReqcount=0; 
   Serial.begin(9600);
-  for(int i = 0; i < sizeof(pumpPins); i++) {
-    pinMode(pumpPins[i], OUTPUT);
-  }
-  pinMode(waitPin, OUTPUT);
 
-  delay(1);
+
+
   
   WiFi.mode(WIFI_AP);
   WiFi.softAP(ssid, password);
@@ -138,35 +111,13 @@ void setup() {
 
 String getDrinkHTML(int id) {
   String nStr = drinkPrefab.substring(0, drinkPrefab.length());
-  nStr.replace("NAME", drinks[id].Name);
+  nStr.replace("NAME", drinks[id]);
   nStr.replace("ID", String(id));
   return nStr;
 }
 
 
 
-int calcFillTime(double t, double cupSize) {
-  return (int) (1000 * t * cupSize / pumpSpeed);
-}
-
-void putInRow(double recipe[], double cupSize) {
-  for(int i = 0; i < sizeof(recipe); i++) {
-    if (recipe[i] > 0) {
-         digitalWrite(pumpPins[i], HIGH);
-         delay(calcFillTime(recipe[i], cupSize));
-         digitalWrite(pumpPins[i], LOW);
-    }  
-  }
-}
-
-void putIn(Drink drink) {
-  digitalWrite(waitPin, HIGH);
-  Serial.println(drink.Name);
-  putInRow(drink.ratio , drink.cupSize);
-  delay(3000);
-  digitalWrite(waitPin, LOW);
-  
-}
 
 
 void loop() {
@@ -177,8 +128,7 @@ void loop() {
     return;
   }
   
-  // Wait until the client sends some data
-  Serial.println("new client");
+
   unsigned long ultimeout = millis()+250;
   while(!client.available() && (millis()<ultimeout) )
   {
@@ -186,7 +136,6 @@ void loop() {
   }
   if(millis()>ultimeout) 
   { 
-    Serial.println("client connection time-out!");
     return; 
   }
   
@@ -198,7 +147,6 @@ void loop() {
   // stop client, if request is empty
   if(sRequest=="")
   {
-    Serial.println("empty request! - stopping client");
     client.stop();
     return;
   }
@@ -241,8 +189,6 @@ void loop() {
     if(iEqu>=0)
     {
       sCmd = sParam.substring(iEqu+1,sParam.length());
-      Serial.println(sCmd);
-      Serial.println(sParam.substring(1, iEqu));
     }
   }
 
@@ -264,7 +210,12 @@ void loop() {
     sHeader += "\r\n";
   }
   else {
-    putIn(drinks[sCmd.toInt()]);
+    Serial.println(sCmd));
+    while(!Serial.available())) {}
+    while((Serial.available())) {
+      Serial.read();
+    }
+   
     sResponse="Done";
     sHeader  = "HTTP/1.1 200 OK\r\n";
     sHeader += "Content-Length: ";
@@ -286,5 +237,4 @@ void loop() {
   // and stop the client
   client.stop();
 
-  Serial.println("Client disonnected");
 }
