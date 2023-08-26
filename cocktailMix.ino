@@ -92,7 +92,6 @@ const int bufferSize = 4;
 unsigned long ulReqcount;
 WiFiServer server(80);
 void setup() {
-   mySerial.begin(9600);
   ulReqcount=0; 
   Serial.begin(9600);
 
@@ -121,7 +120,9 @@ String getDrinkHTML(int id) {
 
 
 void loop() {
-   // Check if a client has connected
+  while((Serial.available())) {
+    Serial.read();
+  }
   WiFiClient client = server.available();
   if (!client) 
   {
@@ -210,8 +211,8 @@ void loop() {
     sHeader += "\r\n";
   }
   else {
-    Serial.println(sCmd));
-    while(!Serial.available())) {}
+    Serial.println(sCmd);
+    while(!Serial.available()) {}
     while((Serial.available())) {
       Serial.read();
     }
