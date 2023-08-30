@@ -6,11 +6,7 @@ const char* ssid = "Cocktailautomat";
 const char* password = ""; 
 
 
-const String drinks[] = {
-    "Pina Colada",
-    "Gruene Wiese",
-    "Shot"
-};
+const String drinks[] = { "LONG ISLAND ICE TEA","TEQUILA SUNRISE","GIN TONIC","ZOMBIE","WHISKEY SOUR","Whisky-Cola","Rum-Cola"," Wodka-O","Lilly-Spezial" };
 
 
 
